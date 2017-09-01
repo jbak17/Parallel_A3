@@ -10,7 +10,10 @@
 * kernel - Pointer to the allcated memory for the kernel
 * kernel_dim - Square dimension of the kernel
 * sd - Standard deviation of the gaussian distribution
-* kerel_max - highest value in the kernel.
+* origin - ...used for calculating values as we move further from origin
+ * 			I'd guess and say that this is the value that will change
+ * 			as we move through the image.
+* kernel_max - highest value in the kernel.
 * colour_max - Sum of all colour values from kernel. Used
 *              for normalisation to maintain correct colours
 *

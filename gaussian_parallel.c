@@ -6,9 +6,13 @@
 ******************************************************************************/
 
 #include "gaussianLib.h"	/*Our Bitmap operations library */
+#include "mpi.h"
 
 #define KERNEL_DIMENSION_SD 3
 #define KERNEL_BITMAP_FILENAME "kernel.bmp"
+#define ARGS 4
+#define MASTER 0
+#define DEBUG 0
 
 /******************************************************************************
 * main
@@ -31,32 +35,53 @@
  *  --- stops timer ---
  *  7 - writes results to file
  *  8 - frees used memory
+ *
+ *  The master process (process 0) will need to read in the source
+	bitmap image (name speci�ed as a command-line argument) and send all required
+	data to each process. Process 0 will then need to receive the outputs from the
+	worker processes (well actually only one process if you use a tree structure) and
+	construct the output image.
+
+ 	MPI_Scatter - sends data out to processes
+ 	MPI_Gather - collects the data from a group of processes.
+
+ 	We want to scatter the image and then gather all the items back in again.
+
+
 *
 ******************************************************************************/
+int parse_args (int argc, char *argv[], int *sd);
+
 int
 main (int argc, char *argv[])
 {
-	BMP *bmp;
-	BMP *new_bmp;
+	BMP *bmp; BMP *new_bmp;
 	float colour_max, kernel_max;
 	int i;
-	int width, height;
-	float sd, kernel_dim, origin;
-	float **kernel; //pointer to array
+	int width, height; //for images
+	int sd, origin; //for kernel
+	float kernel_dim, **kernel; //pointer to array
+	int me, nproc; //for parallelism
 
 	/* Check arguments - You should check types as well! */
-	if (argc != 4)
-	{
-		fprintf (stderr,
-				 "Usage: %s <input file> <output file> <standard deviation>\n",
-				 argv[0]);
-		return 0;
+	parse_args(argc, argv, &sd);
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &me);
+	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+
+	if(me == MASTER){
+		/* Read an image file */
+		bmp = BMP_ReadFile (argv[1]);
+		BMP_CHECK_ERROR (stdout, -1);
+
+		width = BMP_GetWidth (bmp);
+		height = BMP_GetHeight (bmp);
+		new_bmp = BMP_Create (width, height, 24); //create empty bitmap
 	}
 
-	/*Standard Deviation of the Gaussian */
-	sd = atoi (argv[3]);
 	/*The kernel dimensions are deterined by th sd. Pixels beyond 3 standard deviations have
-	   practiaclly no impact on the value for the origin cell */
+		practiaclly no impact on the value for the origin cell */
 	kernel_dim = (2 * (KERNEL_DIMENSION_SD * sd)) + 1;
 	/*The center cell of the kernel */
 	origin = KERNEL_DIMENSION_SD * sd;
@@ -72,35 +97,35 @@ main (int argc, char *argv[])
 	generateGaussianKernel (kernel, kernel_dim, sd, origin, &kernel_max,
 							&colour_max);
 
-	/* Lets create an image for the kernel just for a demo */
-	bitmapFromSquareMatrix (kernel, KERNEL_BITMAP_FILENAME, kernel_dim,
-							kernel_max, 0, 255);
 
-	/* Read an image file */
-	bmp = BMP_ReadFile (argv[1]);
-	BMP_CHECK_ERROR (stdout, -1);
+	if(DEBUG || (me == MASTER))fprintf(stderr, "Scattering image\n");
+	/* Scatter A */
+	if(MPI_Scatter(bmp,
+				   nproc,
+				   MPI_FLOAT,
+				   &new_bmp,
+				   nproc,
+				   MPI_FLOAT,
+				   MASTER,
+				   MPI_COMM_WORLD) != MPI_SUCCESS){
+		fprintf(stderr,"Scattering of A failed\n");
+		MPI_Finalize();
+		exit(EXIT_FAILURE);
+	}
 
 	/* Lets check the runtime performance of our program */
-	clock_t begin = clock ();
-
-	width = BMP_GetWidth (bmp);
-	height = BMP_GetHeight (bmp);
-	new_bmp = BMP_Create (width, height, 24);
 
 	applyConvolution (kernel, kernel_dim, origin, colour_max, bmp, new_bmp);
 
-	clock_t end = clock ();
+	if(me == MASTER){
+		/* Save result */
+		BMP_WriteFile (new_bmp, argv[2]);
+		BMP_CHECK_ERROR (stdout, -2);
 
-	double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
-	printf ("Time spent processing:  %f\n", time_spent);
-
-	/* Save result */
-	BMP_WriteFile (new_bmp, argv[2]);
-	BMP_CHECK_ERROR (stdout, -2);
-
-	/* Free all memory allocated for the image */
-	BMP_Free (bmp);
-	BMP_Free (new_bmp);
+		/* Free all memory allocated for the image */
+		BMP_Free (bmp);
+		BMP_Free (new_bmp);
+	}
 
 	/* Free the kernel memory */
 	for (i = 0; i < kernel_dim; i++)
@@ -109,5 +134,39 @@ main (int argc, char *argv[])
 	}
 	free (kernel);
 
+	MPI_Finalize();
 	return 0;
 }
+
+/*
+ * Receive commmand line inputs:
+ *
+ * In : me
+ *
+ * Out: old_bmp; image to process
+ * 		sd; standard deviation
+ *
+ */
+int
+parse_args (int argc, char *argv[], int *sd)
+{
+	if (argc != ARGS)
+	{
+		fprintf (stderr,
+				 "Usage: %s <input file> <output file> <standard deviation>\n",
+				 argv[0]);
+		return 0;
+	}
+
+	if ((*sd = atoi(argv[3])) <= 0){
+		fprintf (stderr, "Standard deviation must be a number.\n");
+		return 0;
+	}
+
+	return (0);
+}
+
+
+
+
+

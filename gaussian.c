@@ -9,6 +9,7 @@
 
 #define KERNEL_DIMENSION_SD 3
 #define KERNEL_BITMAP_FILENAME "kernel.bmp"
+#define ARGS 4
 
 /******************************************************************************
 * main
@@ -33,6 +34,26 @@
  *  8 - frees used memory
 *
 ******************************************************************************/
+
+int
+parse_args (int argc, char *argv[], BMP *old_bmp, int *sd)
+{
+	if (argc != ARGS)
+	{
+		fprintf (stderr,
+				 "Usage: %s <input file> <output file> <standard deviation>\n",
+				 argv[0]);
+		return 0;
+	}
+
+	if ((*sd = atoi(argv[3])) <= 0){
+		fprintf (stderr, "Standard deviation must be a number.\n");
+		return 0;
+	}
+
+	return (0);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -41,21 +62,12 @@ main (int argc, char *argv[])
   float colour_max, kernel_max;
   int i;
   int width, height;
-  float sd, kernel_dim, origin;
+  int sd, kernel_dim, origin;
   float **kernel; //pointer to array
 
-  /* Check arguments - You should check types as well! */
-  if (argc != 4)
-    {
-      fprintf (stderr,
-	       "Usage: %s <input file> <output file> <standard deviation>\n",
-	       argv[0]);
-      return 0;
-    }
+  parse_args(argc, argv, bmp, &sd);
 
-  /*Standard Deviation of the Gaussian */
-  sd = atoi (argv[3]);
-  /*The kernel dimensions are deterined by th sd. Pixels beyond 3 standard deviations have 
+  /*The kernel dimensions are deterined by th sd. Pixels beyond 3 standard deviations have
      practiaclly no impact on the value for the origin cell */
   kernel_dim = (2 * (KERNEL_DIMENSION_SD * sd)) + 1;
   /*The center cell of the kernel */
