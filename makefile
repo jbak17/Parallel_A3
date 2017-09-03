@@ -1,5 +1,5 @@
 COMPILER = mpicc
-CFLAGS = -Wall -pedantic
+CFLAGS = -Wall -pedantic -g
 COBJS = gaussianLib.o qdbmp.o
 CEXES =  gaussian gaussian_parallel parallel
 
@@ -13,7 +13,6 @@ gaussian_parallel: gaussian_parallel.c ${COBJS}
 
 parallel: parallel.c ${COBJS}
 	${COMPILER} ${CFLAGS} parallel.c ${COBJS} -o parallel -lm
-
 
 %.o: %.c %.h  makefile
 	${COMPILER} ${CFLAGS} -lm $< -c

@@ -194,7 +194,7 @@ bitmapFromSquareMatrix (float **mat, const char *filename, int mat_dim,
 ******************************************************************************/
 void
 applyConvolution (float **kernel, int kernel_dim, float kernel_origin,
-		  float colour_max, BMP * old_bmp, BMP * new_bmp)
+		  float colour_max, BMP * old_bmp, BMP * new_bmp, int me)
 {
   /*Declare all the bits we need */
   unsigned char r, g, b;
@@ -207,7 +207,7 @@ applyConvolution (float **kernel, int kernel_dim, float kernel_origin,
   float g_val = 0;
   float b_val = 0;
   /* Get image's dimensions */
-  width = BMP_GetWidth (old_bmp);
+  width = BMP_GetWidth (old_bmp)/(me+1);
   height = BMP_GetHeight (old_bmp);
 
 	/*Iterate through all the image's pixels */

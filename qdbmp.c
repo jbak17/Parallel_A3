@@ -403,6 +403,39 @@ UINT BMP_GetHeight( BMP* bmp )
 
 
 /**************************************************************
+	Returns the image's datasize.
+**************************************************************/
+UINT BMP_GetImageDataSize( BMP* bmp )
+{
+	if ( bmp == NULL )
+	{
+		BMP_LAST_ERROR_CODE = BMP_INVALID_ARGUMENT;
+		return -1;
+	}
+
+	BMP_LAST_ERROR_CODE = BMP_OK;
+
+	return ( bmp->Header.ImageDataSize );
+}
+
+
+/**************************************************************
+	Returns the image's data to dataBuffer.
+**************************************************************/
+void BMP_GetImageData( BMP* bmp, float *dataBuffer){
+	size_t size = sizeof(bmp->Data);
+
+	memcpy(dataBuffer, bmp->Data, size);
+
+}
+
+/**************************************************************
+	Returns the image's data to dataBuffer.
+**************************************************************/
+void BMP_SetImageData(BMP* dataBuffer, BMP* bmp){}
+
+
+/**************************************************************
 	Returns the image's color depth (bits per pixel).
 **************************************************************/
 USHORT BMP_GetDepth( BMP* bmp )

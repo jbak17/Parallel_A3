@@ -72,6 +72,7 @@ int main(int argc,  char *argv[]) {
 		height = BMP_GetHeight (bmp);
 		new_bmp = BMP_Create (width, height, 24); //create empty bitmap
 	}
+
 	MPI_Bcast(&width, 1, MPI_INT, MASTER, MPI_COMM_WORLD);
 	MPI_Bcast(&height, 1, MPI_INT, MASTER, MPI_COMM_WORLD);
 
@@ -90,7 +91,7 @@ int main(int argc,  char *argv[]) {
 			MPI_COMM_WORLD);
 
 //processes apply blur
-	applyConvolution (kernel, kernel_dim, origin, colour_max, bmp, temp_bmp);
+	applyConvolution (kernel, kernel_dim, origin, colour_max, bmp, temp_bmp, me);
 
 //gather images
 	MPI_Gather(&temp_bmp,

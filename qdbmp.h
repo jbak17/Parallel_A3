@@ -103,7 +103,11 @@ void			BMP_WriteFile				( BMP* bmp, const char* filename );
 UINT			BMP_GetWidth				( BMP* bmp );
 UINT			BMP_GetHeight				( BMP* bmp );
 USHORT			BMP_GetDepth				( BMP* bmp );
+UINT 			BMP_GetImageDataSize		( BMP* bmp );
 
+/* Data access  */
+void			BMP_GetImageData			(BMP* bmp, float* dataBuffer);
+void			BMP_SetImageData			(BMP* bmp, BMP* dataBuffer);
 
 /* Pixel access */
 void			BMP_GetPixelRGB				( BMP* bmp, UINT x, UINT y, UCHAR* r, UCHAR* g, UCHAR* b );
